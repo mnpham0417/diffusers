@@ -35,9 +35,8 @@ from ...utils import (
 )
 from ...utils.torch_utils import randn_tensor
 from ..pipeline_utils import DiffusionPipeline, StableDiffusionMixin
-from .pipeline_output import StableDiffusionPipelineOutput
+from .pipeline_output import StableDiffusionPipelineOutput, StableDiffusionPipelineOutputEDA
 from .safety_checker import StableDiffusionSafetyChecker
-
 
 logger = logging.get_logger(__name__)  # pylint: disable=invalid-name
 
@@ -983,6 +982,9 @@ class StableDiffusionPipeline(
             timestep_cond = self.get_guidance_scale_embedding(
                 guidance_scale_tensor, embedding_dim=self.unet.config.time_cond_proj_dim
             ).to(device=device, dtype=latents.dtype)
+            
+        latents_all = []
+        noise_pred_all = []
 
         # 7. Denoising loop
         num_warmup_steps = len(timesteps) - num_inference_steps * self.scheduler.order
@@ -1035,6 +1037,9 @@ class StableDiffusionPipeline(
                     if callback is not None and i % callback_steps == 0:
                         step_idx = i // getattr(self.scheduler, "order", 1)
                         callback(step_idx, t, latents)
+                
+                latents_all.append(latents.cpu().numpy())
+                noise_pred_all.append(noise_pred.cpu().numpy())
 
         if not output_type == "latent":
             image = self.vae.decode(latents / self.vae.config.scaling_factor, return_dict=False, generator=generator)[
@@ -1058,4 +1063,5 @@ class StableDiffusionPipeline(
         if not return_dict:
             return (image, has_nsfw_concept)
 
-        return StableDiffusionPipelineOutput(images=image, nsfw_content_detected=has_nsfw_concept)
+        # return StableDiffusionPipelineOutput(images=image, nsfw_content_detected=has_nsfw_concept)
+        return StableDiffusionPipelineOutputEDA(images=image, nsfw_content_detected=has_nsfw_concept, latents=latents_all, noise_preds=noise_pred_all)
