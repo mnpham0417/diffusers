@@ -18,7 +18,7 @@ pipeline = pipeline.to(device)
 os.makedirs(save_dir, exist_ok=True)
 
 for i in range(5):
-    captions = ["a painting in the style of Van Gogh"]
+    captions = ["a painting in the style of Monet"]
     # Generate an image
     with torch.autocast(device):
         generated_images = pipeline(captions, guidance_scale=7.5, safety_checker=None).images
